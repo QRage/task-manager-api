@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, status
 from typing import List, Dict
 from datetime import datetime
 from contextlib import asynccontextmanager
-import uuid
 
 from models import TaskCreate, TaskUpdate, TaskInDB
 
@@ -13,25 +12,25 @@ fake_db: Dict[int, TaskInDB] = {}
 next_id = 1
 
 
-initial_tasks_data = [
-    {"title": "Learn SOLID", "completed": False},
-    {"title": "Create presentation", "description": "Create a presentation for the team meeting", "completed": False},
-    {"title": "Learn FastAPI", "description": "Study the FastAPI documentation", "completed": True},
-]
+# initial_tasks_data = [
+#     {"title": "Learn SOLID", "completed": False},
+#     {"title": "Create presentation", "description": "Create a presentation for the team meeting", "completed": False},
+#     {"title": "Learn FastAPI", "description": "Study the FastAPI documentation", "completed": True},
+# ]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global next_id
-    for task_data in initial_tasks_data:
-        task = TaskInDB(
-            id=next_id,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-            **task_data
-        )
-        fake_db[next_id] = task
-        next_id += 1
+    # for task_data in initial_tasks_data:
+    #     task = TaskInDB(
+    #         id=next_id,
+    #         created_at=datetime.now(),
+    #         updated_at=datetime.now(),
+    #         **task_data
+    #     )
+    #     fake_db[next_id] = task
+    #     next_id += 1
     yield
     fake_db.clear()
 
@@ -78,17 +77,19 @@ async def update_task(task_id: int, task: TaskUpdate):
     if task_id not in fake_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     
-    current_time = datetime.now()
-    update_task = TaskInDB(
-        id=task_id,
-        created_at=fake_db[task_id].created_at,
-        updated_at=current_time,
-        title=task.title,
-        description=task.description,
-        completed=task.completed
-    )
-    fake_db[task_id] = update_task
-    return update_task
+    existing_task = fake_db[task_id]
+
+    if task.title is None:
+        existing_task.title = task.title
+    if task.description is None:
+        existing_task.description = task.description
+    if task.completed is not None:
+        existing_task.completed = task.completed
+
+    existing_task.updated_at = datetime.now()
+    fake_db[task_id] = existing_task
+
+    return existing_task
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskInDB, summary="Partially update a task by ID")
@@ -97,15 +98,13 @@ async def partial_update_task(task_id: int, task_update: TaskUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     
     existing_task = fake_db[task_id]
-    update_date = task_update.model_dump(exclude_unset=True)
+    update_data = task_update.model_dump(exclude_unset=True)
+    updated_task_data = existing_task.model_copy(update=update_data)
     
-    for key, value in update_date.items():
-        setattr(existing_task, key, value)
-    
-    existing_task.updated_at = datetime.now()
-    fake_db[task_id] = existing_task
+    updated_task_data.updated_at = datetime.now()
+    fake_db[task_id] = updated_task_data
 
-    return existing_task
+    return updated_task_data
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a task by ID")

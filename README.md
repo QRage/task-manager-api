@@ -13,7 +13,7 @@ This project is a simple RESTful API for a task manager, developed using FastAPI
 
 **Automatic Documentation**: FastAPI automatically generates interactive API documentation using Swagger UI and ReDoc, available under /docs and /redoc respectively.
 
-**Testing**: (To be added) Pytest integration is planned for writing unit and integration tests, ensuring the API is robust and correct.
+**Testing**: Pytest integration is planned for writing unit and integration tests, ensuring the API is robust and correct.
 
 🚀 Getting Started
 These instructions will help you get up and running a copy of the project on your local machine for development and testing.
@@ -84,8 +84,8 @@ Export to Table
 The project will use pytest to automate testing of all API endpoints.
 
 Next steps:  
-* Install pytest and httpx.
-* Create a test directory and files.
+* (done) Install pytest and httpx.
+* (done) Create a test directory and files.
 * Write unit and integration tests for each endpoint.
 
 🤝 Contribution
