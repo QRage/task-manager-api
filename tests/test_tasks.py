@@ -150,4 +150,84 @@ def test_get_task_by_id_not_found(client):
     response_json = response.json()
     assert "detail" in response_json
     assert response_json["detail"] == "Task not found"
+
+
+# --- Tests for PUT /tasks/{task_id} ---
+def test_update_task_success(client):
+    initial_task_data = {
+        "title": "Old Title",
+        "description": "Old Description",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    updated_task_data = {
+        "title": "Updated Title",
+        "description": "New Description for the task.",
+        "completed": True
+    }
+    update_response = client.put(f"/tasks/{task_id}", json=updated_task_data)
+
+    assert update_response.status_code == 200
+
+    response_json = update_response.json()
+    assert response_json["id"] == task_id
+    assert response_json["title"] == updated_task_data["title"]
+    assert response_json["description"] == updated_task_data["description"]
+    assert response_json["completed"] == updated_task_data["completed"]
+    assert response_json["created_at"] == created_task["created_at"]
+    assert response_json["updated_at"] != created_task["updated_at"]
+
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    retrieved_task = get_response.json()
+    assert retrieved_task["title"] == updated_task_data["title"]
+    assert retrieved_task["description"] == updated_task_data["description"]
+    assert retrieved_task["completed"] == updated_task_data["completed"]
+
+
+def test_update_task_not_found(client):
+    non_existent_id = 999
+    update_data = {
+        "title": "Non-existing Task",
+        "description": "Description for a non-existent task.",
+        "completed": False
+    }
+    response = client.put(f"/tasks/{non_existent_id}", json=update_data)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Task not found"
+
+
+def test_update_task_invalid_data(client):
+    initial_task_data = {
+        "title": "Task for Invalid Update",
+        "description": "Will be updated with bad data.",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    invalid_update_data = {
+        "description": "This should faild as title is missing."
+    }
+    response = client.put(f"/tasks/{task_id}", json=invalid_update_data)
+
+    assert response.status_code == 422
+
+    response_json = response.json()
+    assert "detail" in response_json
+    assert isinstance(response_json["detail"], list)
+    assert any(error.get("type") == "missing" and "title" in error.get("loc", []) for error in response_json["detail"])
     
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    retrieved_task = get_response.json()
+    assert retrieved_task["title"] == initial_task_data["title"]
+    assert retrieved_task["description"] == initial_task_data["description"]
+    assert retrieved_task["completed"] == initial_task_data["completed"]

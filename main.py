@@ -79,17 +79,13 @@ async def update_task(task_id: int, task: TaskUpdate):
     
     existing_task = fake_db[task_id]
 
-    if task.title is None:
-        existing_task.title = task.title
-    if task.description is None:
-        existing_task.description = task.description
-    if task.completed is not None:
-        existing_task.completed = task.completed
+    update_data = task.model_dump(exclude_unset=True)
+    updated_task_obj = existing_task.model_copy(update=update_data)
 
-    existing_task.updated_at = datetime.now()
-    fake_db[task_id] = existing_task
+    updated_task_obj.updated_at = datetime.now()
+    fake_db[task_id] = updated_task_obj
 
-    return existing_task
+    return updated_task_obj
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskInDB, summary="Partially update a task by ID")
