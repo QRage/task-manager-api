@@ -106,12 +106,48 @@ def test_create_task_invalid_data(client):
     assert response.status_code == 422
 
     response_json = response.json()
-    print("\n--- Pydantic Validation Error Detail ---")
-    print(response_json) # DEBUG
-    print("--------------------------------------\n")
+    # print("\n--- Pydantic Validation Error Detail ---")
+    # print(response_json) # DEBUG
+    # print("--------------------------------------\n")
 
     assert "detail" in response_json
     assert isinstance(response_json["detail"], list)
 
     assert any(error.get("type") == "missing" and "title" in error.get("loc", []) for error in response_json["detail"])
 
+
+# --- Tests for GET /tasks/{task_id} ---
+def test_get_task_by_id_successfuly(client):
+    task_data = {
+        "title": "Task to Retrieve",
+        "description": "This task will be retrieved by ID",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    get_response = client.get(f"/tasks/{task_id}")
+
+    assert get_response.status_code == 200
+
+    retrieved_task = get_response.json()
+    assert retrieved_task["id"] == task_id
+    assert retrieved_task["title"] == task_data["title"]
+    assert retrieved_task["description"] == task_data["description"]
+    assert retrieved_task["completed"] == task_data["completed"]
+    assert "created_at" in retrieved_task
+    assert "updated_at" in retrieved_task
+
+
+def test_get_task_by_id_not_found(client):
+    non_existent_id = 999
+    response = client.get(f"/tasks/{non_existent_id}")
+
+    assert response.status_code == 404
+
+    response_json = response.json()
+    assert "detail" in response_json
+    assert response_json["detail"] == "Task not found"
+    
