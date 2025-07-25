@@ -22,6 +22,7 @@ def test_get_all_tasks_empty_db(client):
     assert response.json() == []
 
 
+# --- Tests for GET /tasks with data ---
 def test_get_all_tasks_with_data(client):
     task_1_obj = TaskInDB(
         id=1,
@@ -68,3 +69,49 @@ def test_get_all_tasks_with_data(client):
     assert sorted_response[1]["completed"] == task_2_obj.completed
     assert "created_at" in sorted_response[1] and isinstance(sorted_response[1]["created_at"], str)
     assert "updated_at" in sorted_response[1] and isinstance(sorted_response[1]["updated_at"], str)
+
+
+# --- Tests for POST /tasks ---
+def test_create_task_success(client):
+    task_data = {
+        "title": "New Task Title",
+        "description": "This is a new task",
+        "completed": False
+    }
+    response = client.post("/tasks", json=task_data)
+
+    assert response.status_code == 201
+
+    response_json = response.json()
+
+    assert "id" in response_json
+    assert isinstance(response_json["id"], int)
+    assert response_json["id"] > 0
+
+    assert "created_at" in response_json and isinstance(response_json["created_at"], str)
+    assert "updated_at" in response_json and isinstance(response_json["updated_at"], str)
+
+    created_task_id = response_json["id"]
+    get_response = client.get(f"/tasks/{created_task_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["title"] == task_data["title"]
+
+
+def test_create_task_invalid_data(client):
+    invalid_task_data = {
+        "description": "This task has no title."
+    }
+    response = client.post("/tasks", json=invalid_task_data)
+
+    assert response.status_code == 422
+
+    response_json = response.json()
+    print("\n--- Pydantic Validation Error Detail ---")
+    print(response_json) # DEBUG
+    print("--------------------------------------\n")
+
+    assert "detail" in response_json
+    assert isinstance(response_json["detail"], list)
+
+    assert any(error.get("type") == "missing" and "title" in error.get("loc", []) for error in response_json["detail"])
+
