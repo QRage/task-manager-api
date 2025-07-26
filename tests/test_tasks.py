@@ -231,3 +231,32 @@ def test_update_task_invalid_data(client):
     assert retrieved_task["title"] == initial_task_data["title"]
     assert retrieved_task["description"] == initial_task_data["description"]
     assert retrieved_task["completed"] == initial_task_data["completed"]
+
+
+# --- Tests for DELETE /tasks/{task_id} ---
+def test_delete_task_successfully(client):
+    initial_task_data = {
+        "title": "Task to Delete",
+        "description": "This task will be removed.",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    delete_response = client.delete(f"/tasks/{task_id}")
+
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 404
+    assert get_response.json()["detail"] == "Task not found"
+
+
+def test_delete_task_not_found(client):
+    non_existent_id = 999
+    response = client.delete(f"/tasks/{non_existent_id}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Task not found"

@@ -7,7 +7,7 @@ This project is a simple RESTful API for a task manager, developed using FastAPI
 
 **CRUD** Operations: Full support for create, read, update and delete tasks.
 
-**Pydantic Models**: Using *Pydantic to clearly define data models, automatically validate input data and serialize output data.
+**Pydantic Models**: Leveraging Pydantic to clearly define data models, including **distinct models for full (PUT) and partial (PATCH) updates**, ensuring robust validation and serialization.
 
 **In-memory "Database"**: For simplicity and demonstration purposes, task data is stored in the server's memory. This means that the data is not persisted across server restarts.
 
@@ -72,21 +72,23 @@ Here is an overview of the available endpoints:
 | GET  | /tasks  | Get all tasks  | - | List[TaskInDB]  |
 | GET  | /tasks/{task_id}  | Get tasks by ID  | - | TaskInDB  |
 | POST  | /tasks  | Create a new task  | TaskCreate  | TaskInDB  |
-| PUT  | /tasks/{task_id}  | Fully update a task by ID  | TaskCreate  | TaskInDB  |
-| PATCH  | /tasks/{task_id}  | Partially update a task by ID  | TaskCreate  | TaskInDB  |
-| DELETE  | /tasks/{task_id}  | Content Cell  | - | 204No Content  |
+| PUT  | /tasks/{task_id}  | Fully update a task by ID  | **TaskPut**  | TaskInDB  |
+| PATCH  | /tasks/{task_id}  | Partially update a task by ID  | **TaskPatch**  | TaskInDB  |
+| DELETE  | /tasks/{task_id}  | Content Cell  | - | 204 No Content  |
 
+### 🧪 Testing
 
-Export to Table
-🧪 Testing
-(This section will be expanded after the tests are implemented.)
+The project utilizes **Pytest** for comprehensive unit and integration testing of all API endpoints, ensuring reliability and correctness.
 
-The project will use pytest to automate testing of all API endpoints.
+**To run the tests:**
 
-Next steps:  
-* (done) Install pytest and httpx.
-* (done) Create a test directory and files.
-* Write unit and integration tests for each endpoint.
+1.  Make sure you have installed all dependencies (including `pytest` and `httpx`).
+2.  From the project root directory, activate your virtual environment.
+3.  Run Pytest:
+    ```bash
+    python -m pytest -vv
+    ```
+All defined API endpoints (GET, POST, PUT, PATCH, DELETE) have dedicated test cases covering various scenarios including successful operations, invalid input, and handling of non-existent resources.
 
 🤝 Contribution
 Contributions are welcome! If you have suggestions for improvements or want to add new features, please open an Issue or Pull Request.
