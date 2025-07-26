@@ -14,11 +14,16 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     pass
 
-
-class TaskUpdate(BaseModel):
+class TaskPut(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     completed: bool = False
+
+
+class TaskPatch(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None)
+    completed: Optional[bool] = None
 
 
 class TaskInDB(TaskBase):

@@ -231,3 +231,83 @@ def test_update_task_invalid_data(client):
     assert retrieved_task["title"] == initial_task_data["title"]
     assert retrieved_task["description"] == initial_task_data["description"]
     assert retrieved_task["completed"] == initial_task_data["completed"]
+
+
+# --- Tests for PATCH /tasks/{task_id} ---
+def test_patch_task_succesfully(client):
+    initial_task_data = {
+        "title": "Initial Task Title",
+        "description": "This is the original description.",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+    initial_created_at = created_task["created_at"]
+    initial_updated_at = created_task["updated_at"]
+
+    patch_data = {
+        "description": "Updated description via PATCH."
+    }
+    patch_response = client.patch(f"/tasks/{task_id}", json=patch_data)
+
+    assert patch_response.status_code == 200
+
+    response_json = patch_response.json()
+    assert response_json["id"] == task_id
+    assert response_json["title"] == initial_task_data["title"]
+    assert response_json["description"] == patch_data["description"]
+    assert response_json["completed"] == initial_task_data["completed"]
+    assert response_json["created_at"] == initial_created_at
+    assert response_json["updated_at"] != initial_updated_at
+
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    retrieved_task = get_response.json()
+    assert retrieved_task["description"] == patch_data["description"]
+    assert retrieved_task["title"] == initial_task_data["title"]
+
+
+def test_patch_task_not_found(client):
+    non_existent_id = 999
+    patch_data = {
+        "completed": True
+    }
+    response = client.patch(f"/tasks/{non_existent_id}", json=patch_data)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Task not found"
+
+
+def test_patch_task_invalid_data(client):
+    initial_task_data = {
+        "title": "Short Title",
+        "description": "Description.",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    invalid_patch_data = {
+        "title": "a" * 150
+    }
+    response = client.patch(f"/tasks/{task_id}", json=invalid_patch_data)
+
+    assert response.status_code == 422
+
+    response_json = response.json()
+    assert "detail" in response_json
+    assert isinstance(response_json["detail"], list)
+
+    assert any(
+        "string_too_long" in error.get("type", "") and "title" in error.get("loc", [])
+        for error in response_json["detail"]
+    )
+
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    retrieved_task = get_response.json()
+    assert retrieved_task["title"] == initial_task_data["title"]
