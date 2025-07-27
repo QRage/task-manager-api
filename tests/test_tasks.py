@@ -9,6 +9,13 @@ from models import TaskInDB
 
 @pytest.fixture(name="client")
 def client_fixture():
+    """
+    Pytest fixture to provide a test client for the FastAPI application.
+    It clears the fake_db and resets next_id before each test to ensure a clean state.
+
+    :yield: A TestClient instance for making requests to the FastAPI app.
+    :rtype: TestClient
+    """
     fake_db.clear()
     global next_id
     next_id = 1
@@ -17,6 +24,13 @@ def client_fixture():
 
 
 def test_get_all_tasks_empty_db(client):
+    """
+    Tests retrieving all tasks when the database is empty.
+    Expects an empty list and a 200 OK status.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     response = client.get("/tasks")
     assert response.status_code == 200
     assert response.json() == []
@@ -24,6 +38,13 @@ def test_get_all_tasks_empty_db(client):
 
 # --- Tests for GET /tasks with data ---
 def test_get_all_tasks_with_data(client):
+    """
+    Tests retrieving all tasks when the database contains multiple tasks.
+    Verifies the correct number of tasks and their content.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     task_1_obj = TaskInDB(
         id=1,
         title="Test Task 1",
@@ -73,6 +94,13 @@ def test_get_all_tasks_with_data(client):
 
 # --- Tests for POST /tasks ---
 def test_create_task_success(client):
+    """
+    Tests successful creation of a new task via POST /tasks.
+    Verifies 201 Created status and correct task data in response and in DB.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     task_data = {
         "title": "New Task Title",
         "description": "This is a new task",
@@ -98,6 +126,13 @@ def test_create_task_success(client):
 
 
 def test_create_task_invalid_data(client):
+    """
+    Tests creating a task with invalid data (e.g., missing required fields).
+    Expects a 422 Unprocessable Entity status and a Pydantic validation error.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     invalid_task_data = {
         "description": "This task has no title."
     }
@@ -118,6 +153,13 @@ def test_create_task_invalid_data(client):
 
 # --- Tests for GET /tasks/{task_id} ---
 def test_get_task_by_id_successfuly(client):
+    """
+    Tests successful retrieval of a task by its ID.
+    Verifies 200 OK status and correct task data.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     task_data = {
         "title": "Task to Retrieve",
         "description": "This task will be retrieved by ID",
@@ -142,6 +184,13 @@ def test_get_task_by_id_successfuly(client):
 
 
 def test_get_task_by_id_not_found(client):
+    """
+    Tests retrieving a task with a non-existent ID.
+    Expects a 404 Not Found status.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     non_existent_id = 999
     response = client.get(f"/tasks/{non_existent_id}")
 
@@ -154,6 +203,13 @@ def test_get_task_by_id_not_found(client):
 
 # --- Tests for PUT /tasks/{task_id} ---
 def test_update_task_success(client):
+    """
+    Tests successful full update of a task via PUT /tasks/{task_id}.
+    Verifies 200 OK status, updated data, and unchanged creation timestamp.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     initial_task_data = {
         "title": "Old Title",
         "description": "Old Description",
@@ -190,6 +246,13 @@ def test_update_task_success(client):
 
 
 def test_update_task_not_found(client):
+    """
+    Tests updating a task with a non-existent ID.
+    Expects a 404 Not Found status.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     non_existent_id = 999
     update_data = {
         "title": "Non-existing Task",
@@ -203,6 +266,13 @@ def test_update_task_not_found(client):
 
 
 def test_update_task_invalid_data(client):
+    """
+    Tests a full update with invalid data (e.g., missing a required 'title' for PUT).
+    Expects a 422 Unprocessable Entity status and unchanged task data.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     initial_task_data = {
         "title": "Task for Invalid Update",
         "description": "Will be updated with bad data.",
@@ -235,6 +305,13 @@ def test_update_task_invalid_data(client):
 
 # --- Tests for PATCH /tasks/{task_id} ---
 def test_patch_task_succesfully(client):
+    """
+    Tests successful partial update of a task via PATCH /tasks/{task_id}.
+    Verifies 200 OK status, partially updated data, and unchanged creation timestamp.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     initial_task_data = {
         "title": "Initial Task Title",
         "description": "This is the original description.",
@@ -270,6 +347,13 @@ def test_patch_task_succesfully(client):
 
 
 def test_patch_task_not_found(client):
+    """
+    Tests partially updating a task with a non-existent ID.
+    Expects a 404 Not Found status.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     non_existent_id = 999
     patch_data = {
         "completed": True
@@ -281,6 +365,13 @@ def test_patch_task_not_found(client):
 
 
 def test_patch_task_invalid_data(client):
+    """
+    Tests a partial update with invalid data (e.g., 'title' too long).
+    Expects a 422 Unprocessable Entity status and unchanged task data.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
     initial_task_data = {
         "title": "Short Title",
         "description": "Description.",
@@ -311,3 +402,46 @@ def test_patch_task_invalid_data(client):
     assert get_response.status_code == 200
     retrieved_task = get_response.json()
     assert retrieved_task["title"] == initial_task_data["title"]
+
+
+# --- Tests for DELETE /tasks/{task_id} ---
+def test_delete_task_successfully(client):
+    """
+    Tests successful deletion of a task via DELETE /tasks/{task_id}.
+    Verifies 204 No Content status and that the task is no longer retrievable.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
+    initial_task_data = {
+        "title": "Task to Delete",
+        "description": "This task will be removed.",
+        "completed": False
+    }
+    create_response = client.post("/tasks", json=initial_task_data)
+    assert create_response.status_code == 201
+    created_task = create_response.json()
+    task_id = created_task["id"]
+
+    delete_response = client.delete(f"/tasks/{task_id}")
+
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 404
+    assert get_response.json()["detail"] == "Task not found"
+
+
+def test_delete_task_not_found(client):
+    """
+    Tests attempting to delete a task with a non-existent ID.
+    Expects a 404 Not Found status.
+
+    :param client: The FastAPI test client.
+    :type client: TestClient
+    """
+    non_existent_id = 999
+    response = client.delete(f"/tasks/{non_existent_id}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Task not found"
