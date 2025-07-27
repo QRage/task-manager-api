@@ -3,7 +3,7 @@ from typing import List, Dict
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from models import TaskCreate, TaskUpdate, TaskInDB
+from models import TaskCreate, TaskPut, TaskPatch, TaskInDB
 
 
 app = FastAPI(title="Task Management API", version="1.0.0")
@@ -12,25 +12,9 @@ fake_db: Dict[int, TaskInDB] = {}
 next_id = 1
 
 
-# initial_tasks_data = [
-#     {"title": "Learn SOLID", "completed": False},
-#     {"title": "Create presentation", "description": "Create a presentation for the team meeting", "completed": False},
-#     {"title": "Learn FastAPI", "description": "Study the FastAPI documentation", "completed": True},
-# ]
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global next_id
-    # for task_data in initial_tasks_data:
-    #     task = TaskInDB(
-    #         id=next_id,
-    #         created_at=datetime.now(),
-    #         updated_at=datetime.now(),
-    #         **task_data
-    #     )
-    #     fake_db[next_id] = task
-    #     next_id += 1
     yield
     fake_db.clear()
 
@@ -73,33 +57,37 @@ async def create_task(task: TaskCreate):
 
 
 @app.put("/tasks/{task_id}", response_model=TaskInDB, summary="Update a task by ID")
-async def update_task(task_id: int, task: TaskUpdate):
+async def update_task(task_id: int, task: TaskPut):
     if task_id not in fake_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     
     existing_task = fake_db[task_id]
 
-    update_data = task.model_dump(exclude_unset=True)
-    updated_task_obj = existing_task.model_copy(update=update_data)
+    updated_task_obj = TaskInDB(
+        id=task_id,
+        created_at=existing_task.created_at,
+        updated_at=datetime.now(),
+        title=task.title,
+        description=task.description,
+        completed=task.completed
+    )
 
-    updated_task_obj.updated_at = datetime.now()
     fake_db[task_id] = updated_task_obj
-
     return updated_task_obj
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskInDB, summary="Partially update a task by ID")
-async def partial_update_task(task_id: int, task_update: TaskUpdate):
+async def partial_update_task(task_id: int, task_update: TaskPatch):
     if task_id not in fake_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     
     existing_task = fake_db[task_id]
+
     update_data = task_update.model_dump(exclude_unset=True)
     updated_task_data = existing_task.model_copy(update=update_data)
     
     updated_task_data.updated_at = datetime.now()
     fake_db[task_id] = updated_task_data
-
     return updated_task_data
 
 
